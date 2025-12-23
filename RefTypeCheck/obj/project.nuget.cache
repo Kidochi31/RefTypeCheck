@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "tEYUAwAsLzY=",
+  "dgSpecHash": "fkhoWTkVHu0=",
   "success": true,
   "projectFilePath": "/home/kidochi/Hacking/Languages/RefTypeCheck/RefTypeCheck/RefTypeCheck.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/home/kidochi/.nuget/packages/microsoft.z3/4.12.2/microsoft.z3.4.12.2.nupkg.sha512"
+  ],
   "logs": []
 }
