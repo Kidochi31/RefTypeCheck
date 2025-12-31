@@ -5,44 +5,82 @@
 
 
 
-internal record class BType(string Name, Z3.Sort Z3Sort)
+// internal record class BType(string Name)
+// {
+//     internal record class Function(string Name, List<BType> ParameterTypes, BType ReturnType) : BType(Name)
+//     {
+//         public Func<Variable, List<Variable>, Z3.Context, Z3.BoolExpr>? RefinementsOnAssignment = null;
+//         public (List<Variable>, List<BStmt>) ArgumentRefinements = new();
+//         public (Variable, List<Variable>, List<BStmt>) ReturnRefinements = new();
+//     }
+// }
+
+internal record class Z3Management(Z3.Context Context)
 {
-    internal record class Function(string Name, Z3.Sort Z3Sort, List<BType> ParameterTypes, BType ReturnType) : BType(Name, Z3Sort)
+    Z3.Sort VariableSort = Context.MkIntSort();//Context.MkUninterpretedSort("Variable");
+
+    Z3.FuncDecl? _toBool = null;
+    Z3.FuncDecl ToBool => _toBool ??= Context.MkFuncDecl("toBool", [VariableSort], Context.MkBoolSort());
+    Z3.FuncDecl? _toInt = null;
+    Z3.FuncDecl ToInt => _toInt ??= Context.MkFuncDecl("toInt", [VariableSort], Context.MkIntSort());
+
+    Dictionary<int, Z3.FuncDecl> Functions = new Dictionary<int, Z3.FuncDecl>();
+    Dictionary<Variable, Z3.Expr> Variables = new Dictionary<Variable, Z3.Expr>();
+
+    public Z3.FuncDecl GetZ3FuncDecl(int parameters)
     {
-        public Func<BVar, List<BArg>, Z3.Context, Z3.BoolExpr>? RefinementsOnAssignment = null;
-        public (List<BVar>, List<BStmt>) ArgumentRefinements = new();
-        public (BVar, List<BVar>, List<BStmt>) ReturnRefinements = new();
+        if(Functions.ContainsKey(parameters)){
+            return Functions[parameters];
+        }
+        return Functions[parameters] = Context.MkFuncDecl("function", [.. Enumerable.Repeat(VariableSort, parameters + 1)], VariableSort);
+    }
+
+    public Z3.Expr ApplyFunc(Variable function, List<Variable> parameters)
+    {
+        Z3.FuncDecl funcDecl = GetZ3FuncDecl(parameters.Count);
+        return Context.MkApp(funcDecl, [GetZ3Variable(function), ..from var in parameters select GetZ3Variable(var)]);
+    }
+
+    public Z3.Expr GetZ3Variable(Variable variable)
+    {
+        if (Variables.ContainsKey(variable))
+        {
+            return Variables[variable];
+        }
+        return Variables[variable] = Context.MkConst(variable.Name, VariableSort);
+    }
+
+    public Z3.BoolExpr GetZ3BoolVariable(Variable variable)
+    {
+        Z3.Expr z3Variable = GetZ3Variable(variable);
+        return (Z3.BoolExpr) Context.MkApp(ToBool, [z3Variable]);
+    }
+
+    public Z3.IntExpr GetZ3IntVariable(Variable variable)
+    {
+        Z3.Expr z3Variable = GetZ3Variable(variable);
+        return (Z3.IntExpr) Context.MkApp(ToInt, [z3Variable]);
     }
 }
 
-internal record class BTypeRefinementStatements(BVar TargetVariable, BStmt RefinementStatements);
-
-internal record class BVar(string Name, BType Type)
+internal class Variable(string name)
 {
-    private Z3.Expr? Z3Variable = null;
-    public Z3.Expr GetZ3Variable(Z3.Context Context) => Z3Variable ?? (Z3Variable = Context.MkConst(Name, Type.Z3Sort));
-    internal record class Function(string Name, BType.Function FunctionType ) : BVar(Name, FunctionType)
+    public string Name = name;
+
+    public static bool operator ==(Variable a, Variable b)
     {
-        private Z3.FuncDecl? Z3Function = null;
-        public Z3.FuncDecl GetZ3Function(Z3.Context Context)=> Z3Function ?? (Z3Function = Context.MkFuncDecl(Name, (from p in FunctionType.ParameterTypes select p.Z3Sort).ToArray(), FunctionType.ReturnType.Z3Sort));
+        return ReferenceEquals(a, b);
+    }
+    public static bool operator !=(Variable a, Variable b)
+    {
+        return !ReferenceEquals(a, b);
+    }
+
+    public override string ToString()
+    {
+        return $"Var({Name})";
     }
 }
-
-internal abstract record class BArg()
-{
-    public abstract Z3.Expr GetZ3Variable(Z3.Context Context);
-    public record class Variable(BVar Var) : BArg
-    {
-        public override Z3.Expr GetZ3Variable(Z3.Context Context) => Var.GetZ3Variable(Context);
-
-    }
-    public record class IntConstant(int Value) : BArg
-    {
-        public override Z3.Expr GetZ3Variable(Z3.Context Context) => Context.MkInt(Value);
-
-    }
-}
-
 
 
 internal abstract record class BExpr
@@ -51,8 +89,8 @@ internal abstract record class BExpr
     // Variable read
     // Function Call
     // Constant (so far, int and bool)
-    public record class VariableRead(BVar Variable) : BExpr;
-    public record class FunctionCall(BVar Function, List<BArg> Arguments) : BExpr;
+    public record class VariableRead(Variable Variable) : BExpr;
+    public record class FunctionCall(Variable Function, List<Variable> Arguments) : BExpr;
     public record class IntConstant(int Value) : BExpr;
     public record class BoolConstant(bool Value) : BExpr;
 }
@@ -68,7 +106,10 @@ internal abstract record class BStmt
     // Assignments (which in SSA are also variable declarations)
     // Assumption
     // Assertion
-    public record class Assignment(BVar Variable, BExpr Value) : BStmt;
-    public record class Assumption(BVar Variable) : BStmt;
-    public record class Assertion(BVar Variable) : BStmt;
+    public record class Assignment(Variable Variable, BExpr Value) : BStmt;
+    public record class Assumption(Variable Variable) : BStmt;
+    public record class Assertion(Variable Variable) : BStmt;
+    public record class Z3Assumption(Z3AssumptionFunction AssumptionFunction, List<Variable> Arguments) : BStmt;
 }
+
+internal delegate Z3.BoolExpr Z3AssumptionFunction(Z3Management management, List<Variable> variables);

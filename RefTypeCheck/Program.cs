@@ -5,6 +5,7 @@ global using Z3 = Microsoft.Z3;
 global using System.Numerics;
 global using System.Diagnostics;
 using System.ComponentModel;
+using Microsoft.Z3;
 
 // type the following program:
 // let a : {v : int | v >= 0 and v <= 5}
@@ -178,83 +179,137 @@ using System.ComponentModel;
 
 Z3.Context context = new Z3.Context();
 List<BStmt> statements = new();
-BType Int = new BType("int", context.MkIntSort());
-BType Bool = new BType("bool", context.MkBoolSort());
-Z3.Sort otherSort = context.MkUninterpretedSort("other");
-BVar a = new BVar("a", Int);
-BVar b = new BVar("b", Int);
-BVar c = new BVar("c", Int);
+Variable a = new Variable("a");
+Variable b = new Variable("b");
+Variable c = new Variable("c");
 
-BType.Function gte_type = new BType.Function("gte", otherSort, [Int, Int], Bool);
-BVar.Function GTE = new BVar.Function("gte", gte_type);
-gte_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkGe((Z3.IntExpr)args[0].GetZ3Variable(c), (Z3.IntExpr)args[1].GetZ3Variable(c)));
 
-BType.Function lte_type = new BType.Function("lte", otherSort, [Int, Int], Bool);
-BVar.Function LTE = new BVar.Function("lte", lte_type);
-lte_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkLe((Z3.IntExpr)args[0].GetZ3Variable(c), (Z3.IntExpr)args[1].GetZ3Variable(c)));
+Variable gte = new Variable("gte");
+// [a, b, c] => bool(c) = int(a) >= int(b)
+Z3AssumptionFunction gte_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
 
-BType.Function gt_type = new BType.Function("gt", otherSort, [Int, Int], Bool);
-BVar.Function GT = new BVar.Function("gt", gt_type);
-gt_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkGt((Z3.IntExpr)args[0].GetZ3Variable(c), (Z3.IntExpr)args[1].GetZ3Variable(c)));
+Variable lte = new Variable("lte");
+// [a, b, c] => bool(c) = int(a) <= int(b)
+Z3AssumptionFunction lte_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
 
-BType.Function lt_type = new BType.Function("lt", otherSort, [Int, Int], Bool);
-BVar.Function LT = new BVar.Function("lt", lt_type);
-lt_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkLt((Z3.IntExpr)args[0].GetZ3Variable(c), (Z3.IntExpr)args[1].GetZ3Variable(c)));
+Variable gt = new Variable("gt");
+// [a, b, c] => bool(c) = int(a) > int(b)
+Z3AssumptionFunction gt_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
 
-BType.Function and_type = new BType.Function("and", otherSort, [Bool, Bool], Bool);
-BVar.Function And = new BVar.Function("and", and_type);
-and_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkAnd((Z3.BoolExpr)args[0].GetZ3Variable(c), (Z3.BoolExpr)args[1].GetZ3Variable(c)));
+Variable lt = new Variable("lt");
+// [a, b, c] => bool(c) = int(a) < int(b)
+Z3AssumptionFunction lt_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
 
-BType.Function minus_type = new BType.Function("minus", otherSort, [Int, Int], Int);
-BVar.Function Minus = new BVar.Function("minus", minus_type);
-minus_type.RefinementsOnAssignment = (var, args, c) => c.MkEq(var.GetZ3Variable(c), c.MkSub((Z3.IntExpr)args[0].GetZ3Variable(c), (Z3.IntExpr)args[1].GetZ3Variable(c)));
+Variable and = new Variable("and");
+// [a, b, c] => bool(c) = bool(a) and bool(b)
+Z3AssumptionFunction and_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkAnd(manager.GetZ3BoolVariable(args[0]), manager.GetZ3BoolVariable(args[1])));
 
-// a0 = a >= 0
-BVar a0 = new BVar("a0", Bool);
-statements.Add(new BStmt.Assignment(a0, new BExpr.FunctionCall(GTE, [new BArg.Variable(a), new BArg.IntConstant(0)])));
+Variable minus = new Variable("minus");
+// [a, b, c] => int(c) = int(a) - int(b)
+Z3AssumptionFunction minus_function = (manager, args) => manager.Context.MkEq(manager.GetZ3IntVariable(args[2]), manager.Context.MkSub(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
 
-// a1 = a <= 5
-BVar a1 = new BVar("a1", Bool);
-statements.Add(new BStmt.Assignment(a1, new BExpr.FunctionCall(LTE, [new BArg.Variable(a), new BArg.IntConstant(5)])));
+
+// a
+// zero = 0
+// five = 5
+// a0 = a >= zero
+// a1 = a <= five
+// a2 = a0 and a1
+// assume a2
+
+Variable zero = new Variable("zero");
+statements.Add(new BStmt.Assignment(zero, new BExpr.IntConstant(0))); 
+Variable five = new Variable("five");
+statements.Add(new BStmt.Assignment(five, new BExpr.IntConstant(5))); 
+
+// a0 = a >= zero
+Variable a0 = new Variable("a0");
+statements.Add(new BStmt.Assignment(a0, new BExpr.FunctionCall(gte, [a, zero])));
+statements.Add(new BStmt.Z3Assumption(gte_function, [a, zero, a0]));
+
+// a1 = a <= five
+Variable a1 = new Variable("a1");
+statements.Add(new BStmt.Assignment(a1, new BExpr.FunctionCall(lte, [a, five])));
+statements.Add(new BStmt.Z3Assumption(lte_function, [a, five, a1]));
 
 // a2 = a0 and a1
-BVar a2 = new BVar("a2", Bool);
-statements.Add(new BStmt.Assignment(a2, new BExpr.FunctionCall(And, [new BArg.Variable(a0), new BArg.Variable(a1)])));
+Variable a2 = new Variable("a2");
+statements.Add(new BStmt.Assignment(a2, new BExpr.FunctionCall(and, [a0, a1])));
+statements.Add(new BStmt.Z3Assumption(and_function, [a0, a1, a2]));
 
 // assume a2
 statements.Add(new BStmt.Assumption(a2));
 
-// b0 = b < 10
-BVar b0 = new BVar("b0", Bool);
-statements.Add(new BStmt.Assignment(b0, new BExpr.FunctionCall(LT, [new BArg.Variable(b), new BArg.IntConstant(10)])));
+// b
+// ten = 10
+// b0 = b < ten
+// b1 = b > a
+// b2 = b0 and b1
+// assume b2
+
+
+Variable ten = new Variable("ten");
+statements.Add(new BStmt.Assignment(ten, new BExpr.IntConstant(10)));
+
+// b0 = b < ten
+Variable b0 = new Variable("b0");
+statements.Add(new BStmt.Assignment(b0, new BExpr.FunctionCall(lt, [b, ten])));
+statements.Add(new BStmt.Z3Assumption(lt_function, [b, ten, b0]));
 
 // b1 = b > a
-BVar b1 = new BVar("b1", Bool);
-statements.Add(new BStmt.Assignment(b1, new BExpr.FunctionCall(GT, [new BArg.Variable(b), new BArg.Variable(a)])));
+Variable b1 = new Variable("b1");
+statements.Add(new BStmt.Assignment(b1, new BExpr.FunctionCall(gt, [b, a])));
+statements.Add(new BStmt.Z3Assumption(gt_function, [b, a, b1]));
 
 // b2 = b0 and b1
-BVar b2 = new BVar("b2", Bool);
-statements.Add(new BStmt.Assignment(b2, new BExpr.FunctionCall(And, [new BArg.Variable(b0), new BArg.Variable(b1)])));
+Variable b2 = new Variable("b2");
+statements.Add(new BStmt.Assignment(b2, new BExpr.FunctionCall(and, [b0, b1])));
+statements.Add(new BStmt.Z3Assumption(and_function, [b0, b1, b2]));
 
 // assume b2
 statements.Add(new BStmt.Assumption(b2));
 
+
+// one = 1
+// nine = 9
+//
 // c0 = minus(b, a)
-BVar c0 = new BVar("c0", Int);
-statements.Add(new BStmt.Assignment(c0, new BExpr.FunctionCall(Minus, [new BArg.Variable(b), new BArg.Variable(a)])));
+// // note that minus will carry with it the assumptions of c inside
+// c = c0
+// c1 = c>= 1
+// c2 = c <= 9
+// c3 = c1 and c2
+// assert c3
+
+// one = 1
+// nine = 9
+Variable one = new Variable("one");
+statements.Add(new BStmt.Assignment(one, new BExpr.IntConstant(2))); 
+Variable nine = new Variable("nine");
+statements.Add(new BStmt.Assignment(nine, new BExpr.IntConstant(9))); 
+
+// c0 = minus(b, a)
+Variable c0 = new Variable("c0");
+statements.Add(new BStmt.Assignment(c0, new BExpr.FunctionCall(minus, [b, a])));
+statements.Add(new BStmt.Z3Assumption(minus_function, [b, a, c0]));
+
+// c = c0
 statements.Add(new BStmt.Assignment(c, new BExpr.VariableRead(c0)));
 
-// c1 = c>= 1
-BVar c1 = new BVar("c1", Bool);
-statements.Add(new BStmt.Assignment(c1, new BExpr.FunctionCall(GTE, [new BArg.Variable(c), new BArg.IntConstant(1)])));
+// c1 = c>= one
+Variable c1 = new Variable("c1");
+statements.Add(new BStmt.Assignment(c1, new BExpr.FunctionCall(gte, [c, one])));
+statements.Add(new BStmt.Z3Assumption(gte_function, [c, one, c1]));
 
-// c2 = c <= 9
-BVar c2 = new BVar("c2", Bool);
-statements.Add(new BStmt.Assignment(c2, new BExpr.FunctionCall(LTE, [new BArg.Variable(c), new BArg.IntConstant(9)])));
+// c2 = c <= nine
+Variable c2 = new Variable("c2");
+statements.Add(new BStmt.Assignment(c2, new BExpr.FunctionCall(lte, [c, nine])));
+statements.Add(new BStmt.Z3Assumption(lte_function, [c, nine, c2]));
 
 // c3 = c1 and c2
-BVar c3 = new BVar("c3", Bool);
-statements.Add(new BStmt.Assignment(c3, new BExpr.FunctionCall(And, [new BArg.Variable(c1), new BArg.Variable(c2)])));
+Variable c3 = new Variable("c3");
+statements.Add(new BStmt.Assignment(c3, new BExpr.FunctionCall(and, [c1, c2])));
+statements.Add(new BStmt.Z3Assumption(and_function, [c1, c2, c3]));
 // assert c3
 statements.Add(new BStmt.Assertion(c3));
 
@@ -262,7 +317,16 @@ BBlock block = new BBlock.Basic(statements);
 
 CheckByteCode checker = new CheckByteCode(context);
 (bool valid, _, Z3.Model? counterexample) = checker.CheckBlock(block, context.MkTrue());
-Console.WriteLine($"Valid: {valid}\n Counterexample: {counterexample}");
+Console.WriteLine($"Valid: {valid}");
+
+if(counterexample is not null)
+{
+    List<Variable> variables = new(){a, b, c};
+    foreach(var var in variables)
+    {
+        Console.WriteLine($"{var.Name}: {counterexample.Evaluate(checker.Management.GetZ3IntVariable(var))}");
+    }
+}
 
 // type the following program:
 // let a : {v : int | v >= 0 and v <= 5}

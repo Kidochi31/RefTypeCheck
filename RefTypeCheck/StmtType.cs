@@ -16,24 +16,6 @@
 // depending on whether the value is being put into somewhere
 // or taken out
 
-internal class Variable(string name)
-{
-    public string Name = name;
-
-    public static bool operator ==(Variable a, Variable b)
-    {
-        return ReferenceEquals(a, b);
-    }
-    public static bool operator !=(Variable a, Variable b)
-    {
-        return !ReferenceEquals(a, b);
-    }
-
-    public override string ToString()
-    {
-        return $"Var({Name})";
-    }
-}
 
 internal record class TypedVariable(Variable Variable, BaseType Type)
 {

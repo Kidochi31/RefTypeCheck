@@ -5,7 +5,7 @@ internal abstract record class AVar(string Name);
 
 internal record class AFunction(string Name, List<(AVar, AType)> Parameters, AType ReturnType)
 {
-    public Func<BVar, List<BVar>, Z3.Context, Z3.BoolExpr>? RefinementsOnAssignment = null;
+    //public Func<BVar, List<BVar>, Z3.Context, Z3.BoolExpr>? RefinementsOnAssignment = null;
 }
 
 internal abstract record class AExpr
