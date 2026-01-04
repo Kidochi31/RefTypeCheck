@@ -15,6 +15,8 @@
 //     }
 // }
 
+using Microsoft.Z3;
+
 internal record class Z3Management(Z3.Context Context)
 {
     Z3.Sort VariableSort = Context.MkIntSort();//Context.MkUninterpretedSort("Variable");
@@ -32,13 +34,13 @@ internal record class Z3Management(Z3.Context Context)
         if(Functions.ContainsKey(parameters)){
             return Functions[parameters];
         }
-        return Functions[parameters] = Context.MkFuncDecl("function", [.. Enumerable.Repeat(VariableSort, parameters + 1)], VariableSort);
+        return Functions[parameters] = Context.MkFuncDecl("function", [VariableSort, Context.MkIntSort(), .. Enumerable.Repeat(VariableSort, parameters)], VariableSort);
     }
 
-    public Z3.Expr ApplyFunc(Variable function, List<Variable> parameters)
+    public Z3.Expr ApplyFunc(Variable function, List<Variable> parameters, int outputIndex)
     {
         Z3.FuncDecl funcDecl = GetZ3FuncDecl(parameters.Count);
-        return Context.MkApp(funcDecl, [GetZ3Variable(function), ..from var in parameters select GetZ3Variable(var)]);
+        return Context.MkApp(funcDecl, [GetZ3Variable(function), Context.MkInt(outputIndex), ..from var in parameters select GetZ3Variable(var)]);
     }
 
     public Z3.Expr GetZ3Variable(Variable variable)
@@ -47,7 +49,7 @@ internal record class Z3Management(Z3.Context Context)
         {
             return Variables[variable];
         }
-        return Variables[variable] = Context.MkConst(variable.Name, VariableSort);
+        return Variables[variable] = Context.MkConst(variable.ToString(), VariableSort);
     }
 
     public Z3.BoolExpr GetZ3BoolVariable(Variable variable)
@@ -65,7 +67,10 @@ internal record class Z3Management(Z3.Context Context)
 
 internal class Variable(string name)
 {
+
+    static int numberCounter = 0;
     public string Name = name;
+    public int Id = numberCounter++;
 
     public static bool operator ==(Variable a, Variable b)
     {
@@ -78,7 +83,7 @@ internal class Variable(string name)
 
     public override string ToString()
     {
-        return $"Var({Name})";
+        return $"{Name}%{Id}";
     }
 }
 
@@ -90,14 +95,26 @@ internal abstract record class BExpr
     // Function Call
     // Constant (so far, int and bool)
     public record class VariableRead(Variable Variable) : BExpr;
-    public record class FunctionCall(Variable Function, List<Variable> Arguments) : BExpr;
+    public record class FunctionCall(Variable Function, List<Variable> Arguments, int OutputIndex) : BExpr
+    {
+        public override string ToString()
+        {
+            return $"FunctionCall({Function}, [{string.Join(", ",Arguments)}], {OutputIndex})";
+        }
+    }
     public record class IntConstant(int Value) : BExpr;
     public record class BoolConstant(bool Value) : BExpr;
 }
 
 internal abstract record class BBlock()
 {
-    public record class Basic(List<BStmt> Body) : BBlock();
+    public record class Basic(List<BStmt> Body) : BBlock()
+    {
+        public override string ToString()
+        {
+            return $"BasicBlock([{string.Join(",\n",Body)}])";
+        }
+    }
 }
 
 internal abstract record class BStmt
@@ -109,7 +126,15 @@ internal abstract record class BStmt
     public record class Assignment(Variable Variable, BExpr Value) : BStmt;
     public record class Assumption(Variable Variable) : BStmt;
     public record class Assertion(Variable Variable) : BStmt;
-    public record class Z3Assumption(Z3AssumptionFunction AssumptionFunction, List<Variable> Arguments) : BStmt;
+    public record class Z3Assumption(Z3AssumptionFunction AssumptionFunction, Variable CheckVar, List<Variable> Arguments) : BStmt
+    {
+        public override string ToString()
+        {
+            return $"Z3Assumption {{ {AssumptionFunction}, {CheckVar}, [{string.Join(", ",Arguments)}] }}";
+        }
+    }
 }
 
-internal delegate Z3.BoolExpr Z3AssumptionFunction(Z3Management management, List<Variable> variables);
+
+internal record class Z3AssumptionFunction(string Name, Z3AssumptionDelegate Function);
+internal delegate Z3.BoolExpr Z3AssumptionDelegate(Z3Management management, List<Variable> variables);

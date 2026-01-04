@@ -50,7 +50,8 @@ internal class CheckByteCode(Z3.Context context)
     public (bool Valid, Z3.BoolExpr NewContext, Z3.Model? Counterexample) CheckZ3Assumption (BStmt.Z3Assumption statement, Z3.BoolExpr context)
     {
         // an assumption adds the statement to the context
-        context = Context.MkAnd(context, statement.AssumptionFunction(Management, statement.Arguments));
+        context = Context.MkAnd(context, Context.MkEq(Management.GetZ3BoolVariable(statement.CheckVar), statement.AssumptionFunction.Function(Management, statement.Arguments)));
+        if(HasContradiction(context)) throw new Exception($"CONRADICTION at {context}");
         return (true, context, null);
     }
 
@@ -60,7 +61,7 @@ internal class CheckByteCode(Z3.Context context)
         // check implication of context -> variable
         // then add the variable to the context
         Z3ImplicationResult result = Z3Check.CheckImplication(context, Management.GetZ3BoolVariable(statement.Variable), Context);
-        context = Context.MkAnd(context, Management.GetZ3BoolVariable(statement.Variable));
+        //context = Context.MkAnd(context, Management.GetZ3BoolVariable(statement.Variable));
         return (result.Status == Z3ImplicationStatus.Proven, context, result.Counterexample);
     }
 
@@ -68,6 +69,7 @@ internal class CheckByteCode(Z3.Context context)
     {
         // an assumption adds the statement to the context
         context = Context.MkAnd(context, Management.GetZ3BoolVariable(statement.Variable));
+        if(HasContradiction(context)) throw new Exception($"CONRADICTION at {context}");
         return (true, context, null);
     }
 
@@ -89,7 +91,7 @@ internal class CheckByteCode(Z3.Context context)
             case BExpr.FunctionCall functionCall:
                 {
                     // add var = function(args) to the context
-                    Z3.Expr functionResult = Management.ApplyFunc(functionCall.Function, functionCall.Arguments);
+                    Z3.Expr functionResult = Management.ApplyFunc(functionCall.Function, functionCall.Arguments, functionCall.OutputIndex);
                     Z3.BoolExpr assignmentRefinement = Context.MkEq(Management.GetZ3Variable(variable), functionResult);
                     context = Context.MkAnd(context, assignmentRefinement);
                     break;
@@ -111,8 +113,20 @@ internal class CheckByteCode(Z3.Context context)
             default:
                 throw new Exception("Invalid expression");
         }
+        if(HasContradiction(context)) throw new Exception($"CONRADICTION at {context}");
         // assignment does no checking -> it merely adds to context -> return true
         // NOTE: maybe add checking to check that assignment is not impossible at all (i.e. checking that context does not evaluate to false)
         return (true, context, null);
+    }
+
+    bool HasContradiction(Z3.BoolExpr context)
+    {
+        Z3.Solver solver = Context.MkSolver();
+        solver.Add(context);
+        if(solver.Check() != Z3.Status.SATISFIABLE)
+        {
+            return true;
+        }
+        return false;
     }
 }
