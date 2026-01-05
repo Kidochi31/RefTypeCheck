@@ -597,31 +597,72 @@ RefinementAndType gte_return_type = new RefinementAndType(boolType, new Refineme
 Type gte_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, gte_return_type], [gte_a, gte_b, gte_c]);
 statements.Add(new TStmt.AssumeType(new RefinementAndType(gte_type, null), gte));
 
-// Variable lte = new Variable("lte");
-// // [a, b, c] => bool(c) = int(a) <= int(b)
-// Z3AssumptionFunction lte_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
+Variable lte = new Variable("lte");
+// [a, b, c] => bool(c) = int(a) <= int(b)
+Variable lte_a = new("lte_a");
+Variable lte_b = new("lte_b");
+Variable lte_c = new("lte_c");
+Variable lte_return_v = new("lte_return_v");
+Variable lte_check_v = new("lte_check_v");
+Z3AssumptionFunction lte_function = new("lte", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
+RefinementAndType lte_return_type = new RefinementAndType(boolType, new Refinement(lte_return_v, lte_check_v, [new TStmt.Z3Assumption(lte_function, lte_check_v, [(unrefinedInt, lte_a), (unrefinedInt, lte_b), (unrefinedBool, lte_c)])]));
+Type lte_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, lte_return_type], [lte_a, lte_b, lte_c]);
+statements.Add(new TStmt.AssumeType(new RefinementAndType(lte_type, null), lte));
 
-// Variable gt = new Variable("gt");
-// // [a, b, c] => bool(c) = int(a) > int(b)
-// Z3AssumptionFunction gt_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
+Variable lt = new Variable("lt");
+// [a, b, c] => bool(c) = int(a) < int(b)
+Variable lt_a = new("lt_a");
+Variable lt_b = new("lt_b");
+Variable lt_c = new("lt_c");
+Variable lt_return_v = new("lt_return_v");
+Variable lt_check_v = new("lt_check_v");
+Z3AssumptionFunction lt_function = new("lt", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
+RefinementAndType lt_return_type = new RefinementAndType(boolType, new Refinement(lt_return_v, lt_check_v, [new TStmt.Z3Assumption(lt_function, lt_check_v, [(unrefinedInt, lt_a), (unrefinedInt, lt_b), (unrefinedBool, lt_c)])]));
+Type lt_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, lt_return_type], [lt_a, lt_b, lt_c]);
+statements.Add(new TStmt.AssumeType(new RefinementAndType(lt_type, null), lt));
 
-// Variable lt = new Variable("lt");
-// // [a, b, c] => bool(c) = int(a) < int(b)
-// Z3AssumptionFunction lt_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
+Variable gt = new Variable("gt");
+// [a, b, c] => bool(c) = int(a) > int(b)
+Variable gt_a = new("gt_a");
+Variable gt_b = new("gt_b");
+Variable gt_c = new("gt_c");
+Variable gt_return_v = new("gt_return_v");
+Variable gt_check_v = new("gt_check_v");
+Z3AssumptionFunction gt_function = new("gt", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
+RefinementAndType gt_return_type = new RefinementAndType(boolType, new Refinement(gt_return_v, gt_check_v, [new TStmt.Z3Assumption(gt_function, gt_check_v, [(unrefinedInt, gt_a), (unrefinedInt, gt_b), (unrefinedBool, gt_c)])]));
+Type gt_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, gt_return_type], [gt_a, gt_b, gt_c]);
+statements.Add(new TStmt.AssumeType(new RefinementAndType(gt_type, null), gt));
 
-// Variable and = new Variable("and");
-// // [a, b, c] => bool(c) = bool(a) and bool(b)
-// Z3AssumptionFunction and_function = (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkAnd(manager.GetZ3BoolVariable(args[0]), manager.GetZ3BoolVariable(args[1])));
+Variable and = new Variable("and");
+// [a, b, c] => bool(c) = bool(a) > bool(b)
+Variable and_a = new("and_a");
+Variable and_b = new("and_b");
+Variable and_c = new("and_c");
+Variable and_return_v = new("and_return_v");
+Variable and_check_v = new("and_check_v");
+Z3AssumptionFunction and_function = new("and", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkAnd(manager.GetZ3BoolVariable(args[0]), manager.GetZ3BoolVariable(args[1]))));
+RefinementAndType and_return_type = new RefinementAndType(boolType, new Refinement(and_return_v, and_check_v, [new TStmt.Z3Assumption(and_function, and_check_v, [(unrefinedBool, and_a), (unrefinedBool, and_b), (unrefinedBool, and_c)])]));
+Type and_type = new Type(func3Generic, [unrefinedBool, unrefinedBool, and_return_type], [and_a, and_b, and_c]);
+statements.Add(new TStmt.AssumeType(new RefinementAndType(and_type, null), and));
 
-// Variable minus = new Variable("minus");
-// // [a, b, c] => int(c) = int(a) - int(b)
-// Z3AssumptionFunction minus_function = (manager, args) => manager.Context.MkEq(manager.GetZ3IntVariable(args[2]), manager.Context.MkSub(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1])));
-
+Variable minus = new Variable("minus");
+// [a, b, c] => int(c) = int(a) - int(b)
+Variable minus_a = new("minus_a");
+Variable minus_b = new("minus_b");
+Variable minus_c = new("minus_c");
+Variable minus_return_v = new("minus_return_v");
+Variable minus_check_v = new("minus_check_v");
+Z3AssumptionFunction minus_function = new("minus", (manager, args) => manager.Context.MkEq(manager.GetZ3IntVariable(args[2]), manager.Context.MkSub(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
+RefinementAndType minus_return_type = new RefinementAndType(intType, new Refinement(minus_return_v, minus_check_v, [new TStmt.Z3Assumption(minus_function, minus_check_v, [(unrefinedInt, minus_a), (unrefinedInt, minus_b), (unrefinedInt, minus_c)])]));
+Type minus_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, minus_return_type], [minus_a, minus_b, minus_c]);
+statements.Add(new TStmt.AssumeType(new RefinementAndType(minus_type, null), minus));
 
 // create variable a : int
 // type variable a_v
-// a0 = a_v >= 0
-// a1 = a_v <= 5
+// zero = 0
+// five = 5
+// a0 = a_v >= zero
+// a1 = a_v <= five
 // a2 = a0 and a1
 // confirm a2
 
@@ -629,31 +670,108 @@ Variable a = new Variable("a");
 
 Variable a_v = new("a_v");
 Variable zero = new("zero");
+Variable five = new("five");
 Variable a_0 = new("a_0");
+Variable a_1 = new("a_1");
+Variable a_2 = new("a_2");
 
-RefinementAndType a_type = new RefinementAndType(intType, new Refinement(a_v, a_0, [
+RefinementAndType a_type = new RefinementAndType(intType, new Refinement(a_v, a_2, [
     new TStmt.Assignment(unrefinedInt, zero, new TExpr.IntConstant(0)),
-    new TStmt.Assignment(unrefinedBool, a_0, new TExpr.FunctionCall(gte, [a_v, zero]))
+    new TStmt.Assignment(unrefinedInt, five, new TExpr.IntConstant(5)),
+    new TStmt.Assignment(unrefinedBool, a_0, new TExpr.FunctionCall(gte, [a_v, zero])),
+    new TStmt.Assignment(unrefinedBool, a_1, new TExpr.FunctionCall(lte, [a_v, five])),
+    new TStmt.Assignment(unrefinedBool, a_2, new TExpr.FunctionCall(and, [a_0, a_1])),
 ]));
 
 statements.Add(new TStmt.AssumeType(a_type, a));
 
 // assert a >= -1
 
-Variable a_v2 = new("a_v2");
-Variable neg_one = new("neg_one");
-Variable a_02 = new("a_02");
+// Variable a_v2 = new("a_v2");
+// Variable neg_one = new("neg_one");
+// Variable a_02 = new("a_02");
 
-RefinementAndType a_type2 = new RefinementAndType(intType, new Refinement(a_v2, a_02, [
-    new TStmt.Assignment(unrefinedInt, neg_one, new TExpr.IntConstant(-1)),
-    new TStmt.Assignment(unrefinedBool, a_02, new TExpr.FunctionCall(gte, [a_v2, neg_one]))
+// RefinementAndType a_type2 = new RefinementAndType(intType, new Refinement(a_v2, a_02, [
+//     new TStmt.Assignment(unrefinedInt, neg_one, new TExpr.IntConstant(-1)),
+//     new TStmt.Assignment(unrefinedBool, a_02, new TExpr.FunctionCall(gte, [a_v2, neg_one]))
+// ]));
+
+// statements.Add(new TStmt.AssertType(a_type2, a));
+
+
+// I need to merge the typed byte code checker with the untyped byte code checker
+// so that checks in the typed byte code checker can be done instantaneously with the untyped checker
+// i.e. whenever BStmts are returned in order to be checked -> they should just be checked instead
+// hopefully this isn't too difficult...
+
+
+
+// create variable b : int
+// ten = 10
+// b0 = b < ten
+// b1 = b > a
+// b2 = b0 and b1
+// assume b2
+Variable b = new Variable("b");
+
+Variable b_v = new("b_v");
+Variable ten = new("ten");
+Variable b_0 = new("b_0");
+Variable b_1 = new("b_1");
+Variable b_2 = new("b_2");
+
+RefinementAndType b_type = new RefinementAndType(intType, new Refinement(b_v, b_2, [
+    new TStmt.Assignment(unrefinedInt, ten, new TExpr.IntConstant(10)),
+    new TStmt.Assignment(unrefinedBool, b_0, new TExpr.FunctionCall(lt, [b_v, ten])),
+    new TStmt.Assignment(unrefinedBool, b_1, new TExpr.FunctionCall(gt, [b_v, a])),
+    new TStmt.Assignment(unrefinedBool, b_2, new TExpr.FunctionCall(and, [b_0, b_1])),
 ]));
 
-statements.Add(new TStmt.AssertType(a_type2, a));
+statements.Add(new TStmt.AssumeType(b_type, b));
 
 
-Variable b = new Variable("b");
+// ASSIGNMENT
+// c0 = minus(b, a)
+// // note that minus will carry with it the assumptions of c inside
+// c = c0
+
 Variable c = new Variable("c");
+Variable c_0 = new("c_0");
+
+statements.Add(new TStmt.Assignment(unrefinedInt, c_0, new TExpr.FunctionCall(minus, [b, a])));
+statements.Add(new TStmt.Assignment(unrefinedInt, c, new TExpr.VariableRead(c_0)));
+
+
+
+// type of c
+// one = 1
+// nine = 9
+// c1 = c >= one
+// c2 = c <= nine
+// c3 = c1 and c2
+// confirm c3
+
+Variable one = new("one");
+Variable nine = new("nine");
+Variable c_v = new("c_v");
+Variable c_1 = new("c_1");
+Variable c_2 = new("c_2");
+Variable c_3 = new("c_3");
+
+
+RefinementAndType c_type = new RefinementAndType(intType, new Refinement(c_v, c_3, [
+    new TStmt.Assignment(unrefinedInt, one, new TExpr.IntConstant(1)),
+    new TStmt.Assignment(unrefinedInt, nine, new TExpr.IntConstant(9)),
+    new TStmt.Assignment(unrefinedBool, c_1, new TExpr.FunctionCall(gte, [c_v, one])),
+    new TStmt.Assignment(unrefinedBool, c_2, new TExpr.FunctionCall(lte, [c_v, nine])),
+    new TStmt.Assignment(unrefinedBool, c_3, new TExpr.FunctionCall(and, [c_1, c_2])),
+]));
+
+// now assert that c is of c_type
+statements.Add(new TStmt.AssertType(c_type, c));
+
+
+
 
 TBlock typedBlock = new TBlock.Basic(statements);
 
