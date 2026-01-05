@@ -1,12 +1,40 @@
 
 
-internal record class RefinementAndType(Type Type, Refinement? Refinement);
+internal record class RefinementAndType(TypeOrTypeVariable Type, Refinement? Refinement);
 
 internal enum Variance
 {
     None,
     Covariant,
     Contravariant
+}
+
+internal class TypeVariable(string name)
+{
+
+    static int numberCounter = 0;
+    public string Name = name;
+    public int Id = numberCounter++;
+
+    public static bool operator ==(TypeVariable a, TypeVariable b)
+    {
+        return ReferenceEquals(a, b);
+    }
+    public static bool operator !=(TypeVariable a, TypeVariable b)
+    {
+        return !ReferenceEquals(a, b);
+    }
+
+    public override string ToString()
+    {
+        return $"{Name}%{Id}";
+    }
+}
+
+internal abstract record class TypeOrTypeVariable
+{
+    public record class Type(global::Type T) : TypeOrTypeVariable;
+    public record class TypeVariable(global::TypeVariable Variable): TypeOrTypeVariable;
 }
 
 internal record class Generic(string Name, List<Variance> Parameters, bool FunctionType);

@@ -577,10 +577,10 @@ using System.ComponentModel;
 Z3.Context context = new Z3.Context();
 List<TStmt> statements = new();
 Generic intGeneric = new Generic("int", [], false);
-Type intType = new Type(intGeneric, [], []);
+TypeOrTypeVariable.Type intType = new(new Type(intGeneric, [], []));
 RefinementAndType unrefinedInt = new RefinementAndType(intType, null);
 Generic boolGeneric = new Generic("bool", [], false);
-Type boolType = new Type(boolGeneric, [], []);
+TypeOrTypeVariable.Type boolType = new(new Type(boolGeneric, [], []));
 RefinementAndType unrefinedBool = new RefinementAndType(boolType, null);
 Generic func3Generic = new Generic("func3", [Variance.Contravariant, Variance.Contravariant, Variance.Covariant], false);
 
@@ -594,7 +594,7 @@ Variable gte_return_v = new("gte_return_v");
 Variable gte_check_v = new("gte_check_v");
 Z3AssumptionFunction gte_function = new("gte", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
 RefinementAndType gte_return_type = new RefinementAndType(boolType, new Refinement(gte_return_v, gte_check_v, [new TStmt.Z3Assumption(gte_function, gte_check_v, [(unrefinedInt, gte_a), (unrefinedInt, gte_b), (unrefinedBool, gte_c)])]));
-Type gte_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, gte_return_type], [gte_a, gte_b, gte_c]);
+TypeOrTypeVariable.Type gte_type = new(new Type(func3Generic, [unrefinedInt, unrefinedInt, gte_return_type], [gte_a, gte_b, gte_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(gte_type, null), gte));
 
 Variable lte = new Variable("lte");
@@ -606,7 +606,7 @@ Variable lte_return_v = new("lte_return_v");
 Variable lte_check_v = new("lte_check_v");
 Z3AssumptionFunction lte_function = new("lte", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLe(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
 RefinementAndType lte_return_type = new RefinementAndType(boolType, new Refinement(lte_return_v, lte_check_v, [new TStmt.Z3Assumption(lte_function, lte_check_v, [(unrefinedInt, lte_a), (unrefinedInt, lte_b), (unrefinedBool, lte_c)])]));
-Type lte_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, lte_return_type], [lte_a, lte_b, lte_c]);
+TypeOrTypeVariable.Type lte_type = new(new Type(func3Generic, [unrefinedInt, unrefinedInt, lte_return_type], [lte_a, lte_b, lte_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(lte_type, null), lte));
 
 Variable lt = new Variable("lt");
@@ -618,7 +618,7 @@ Variable lt_return_v = new("lt_return_v");
 Variable lt_check_v = new("lt_check_v");
 Z3AssumptionFunction lt_function = new("lt", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkLt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
 RefinementAndType lt_return_type = new RefinementAndType(boolType, new Refinement(lt_return_v, lt_check_v, [new TStmt.Z3Assumption(lt_function, lt_check_v, [(unrefinedInt, lt_a), (unrefinedInt, lt_b), (unrefinedBool, lt_c)])]));
-Type lt_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, lt_return_type], [lt_a, lt_b, lt_c]);
+TypeOrTypeVariable.Type lt_type = new(new Type(func3Generic, [unrefinedInt, unrefinedInt, lt_return_type], [lt_a, lt_b, lt_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(lt_type, null), lt));
 
 Variable gt = new Variable("gt");
@@ -630,7 +630,7 @@ Variable gt_return_v = new("gt_return_v");
 Variable gt_check_v = new("gt_check_v");
 Z3AssumptionFunction gt_function = new("gt", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkGt(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
 RefinementAndType gt_return_type = new RefinementAndType(boolType, new Refinement(gt_return_v, gt_check_v, [new TStmt.Z3Assumption(gt_function, gt_check_v, [(unrefinedInt, gt_a), (unrefinedInt, gt_b), (unrefinedBool, gt_c)])]));
-Type gt_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, gt_return_type], [gt_a, gt_b, gt_c]);
+TypeOrTypeVariable.Type gt_type = new(new Type(func3Generic, [unrefinedInt, unrefinedInt, gt_return_type], [gt_a, gt_b, gt_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(gt_type, null), gt));
 
 Variable and = new Variable("and");
@@ -642,7 +642,7 @@ Variable and_return_v = new("and_return_v");
 Variable and_check_v = new("and_check_v");
 Z3AssumptionFunction and_function = new("and", (manager, args) => manager.Context.MkEq(manager.GetZ3BoolVariable(args[2]), manager.Context.MkAnd(manager.GetZ3BoolVariable(args[0]), manager.GetZ3BoolVariable(args[1]))));
 RefinementAndType and_return_type = new RefinementAndType(boolType, new Refinement(and_return_v, and_check_v, [new TStmt.Z3Assumption(and_function, and_check_v, [(unrefinedBool, and_a), (unrefinedBool, and_b), (unrefinedBool, and_c)])]));
-Type and_type = new Type(func3Generic, [unrefinedBool, unrefinedBool, and_return_type], [and_a, and_b, and_c]);
+TypeOrTypeVariable.Type and_type = new(new Type(func3Generic, [unrefinedBool, unrefinedBool, and_return_type], [and_a, and_b, and_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(and_type, null), and));
 
 Variable minus = new Variable("minus");
@@ -654,7 +654,7 @@ Variable minus_return_v = new("minus_return_v");
 Variable minus_check_v = new("minus_check_v");
 Z3AssumptionFunction minus_function = new("minus", (manager, args) => manager.Context.MkEq(manager.GetZ3IntVariable(args[2]), manager.Context.MkSub(manager.GetZ3IntVariable(args[0]), manager.GetZ3IntVariable(args[1]))));
 RefinementAndType minus_return_type = new RefinementAndType(intType, new Refinement(minus_return_v, minus_check_v, [new TStmt.Z3Assumption(minus_function, minus_check_v, [(unrefinedInt, minus_a), (unrefinedInt, minus_b), (unrefinedInt, minus_c)])]));
-Type minus_type = new Type(func3Generic, [unrefinedInt, unrefinedInt, minus_return_type], [minus_a, minus_b, minus_c]);
+TypeOrTypeVariable.Type minus_type = new(new Type(func3Generic, [unrefinedInt, unrefinedInt, minus_return_type], [minus_a, minus_b, minus_c]));
 statements.Add(new TStmt.AssumeType(new RefinementAndType(minus_type, null), minus));
 
 // create variable a : int
@@ -775,21 +775,14 @@ statements.Add(new TStmt.AssertType(c_type, c));
 
 TBlock typedBlock = new TBlock.Basic(statements);
 
-CheckTypedByteCode typedChecker = new CheckTypedByteCode(intType, boolType, [func3Generic]);
+CheckByteCode checker = new CheckByteCode(context);
 
-(bool typeValid, BBlock? block) = typedChecker.CheckBlock(typedBlock);
+CheckTypedByteCode typedChecker = new CheckTypedByteCode(intType.T, boolType.T, [func3Generic], checker);
 
-if (!typeValid || block is null)
-{
-    Console.WriteLine("NOT VALID!");
-    return;
-}
+(bool valid, BBlock? block, var boolContext, var counterexample) = typedChecker.CheckBlock(typedBlock, context.MkTrue());
 
 Console.WriteLine($"bytecode: \n{block}");
-
-CheckByteCode checker = new CheckByteCode(context);
-(bool valid, Z3.BoolExpr boolExpr, Z3.Model? counterexample) = checker.CheckBlock(block, context.MkTrue());
-Console.WriteLine($"Valid: {valid}, Context: {boolExpr}");
+Console.WriteLine($"Valid: {valid}, Context: {boolContext}");
 
 if(counterexample is not null)
 {
